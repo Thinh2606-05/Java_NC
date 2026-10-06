@@ -1,0 +1,23 @@
+[config]
+windowSize=3
+batchSize=2
+periodSize=2
+delta=0.2
+pruningStrategy=REVISED_UPPER_BOUND
+
+[items]
+A=4:10
+B=5:8
+C=1:18
+D=4:5
+E=2:14
+
+[transactions]
+T1=A(4) D(2) E(9)
+T2=A(2) C(12) D(1)
+T3=B(8) E(5)
+T4=C(18) D(5) E(14)
+T5=A(10) B(7) C(15) E(10)
+T6=A(3) C(13)
+T7=A(6) B(6) D(2) E(8)
+T8=B(6) C(8) D(1) E(3)

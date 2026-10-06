@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TFUS - Khai phá Mẫu Tiện ích Mờ theo Thời gian</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header>
+        <div class="logo-group">
+            <h1 data-i18n="app_title">🌊 TFUS Khai phá Luồng Dữ liệu</h1>
+            <p data-i18n="app_subtitle">Khai phá mẫu tiện ích mờ theo thời gian với mô hình Cửa sổ trượt (Java 17+ thuần)</p>
+        </div>
+        <div class="header-actions">
+            <!-- Language Switcher -->
+            <div class="lang-switcher">
+                <button type="button" class="lang-btn active" data-lang="vi" title="Tiếng Việt">🇻🇳 VI</button>
+                <button type="button" class="lang-btn" data-lang="en" title="English">🇬🇧 EN</button>
+            </div>
+            <select id="preset-select" class="form-control" style="width: auto;"></select>
+            <button id="btn-run-mine" class="btn btn-primary" data-i18n="btn_run_mine">⚡ Chạy Thuật Toán</button>
+            <button id="btn-run-verify" class="btn btn-success" data-i18n="btn_run_verify">🧪 Đối chiếu Chạy tay</button>
+        </div>
+    </header>
+
+    <nav class="tabs">
+        <button class="tab-btn active" data-tab="tab-overview" data-i18n="tab_overview">Tổng quan & Cấu hình</button>
+        <button class="tab-btn" data-tab="tab-results" data-i18n="tab_results">Kết quả Khai phá</button>
+        <button class="tab-btn" data-tab="tab-steps" data-i18n="tab_steps">Trace các Bước</button>
+        <button class="tab-btn" data-tab="tab-verify" data-i18n="tab_verify">Báo cáo Đối chiếu</button>
+        <button class="tab-btn" data-tab="tab-theory" data-i18n="tab_theory">Lý thuyết & Kiến trúc</button>
+    </nav>
+
+    <main>
+        <!-- TAB 1: OVERVIEW & CONFIG -->
+        <div id="tab-overview" class="tab-content active">
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-title" data-i18n="card_config_title">Cấu hình Khai phá</div>
+                    <div class="form-group">
+                        <label data-i18n="label_window_size">Kích thước cửa sổ trượt (ws - số lô mỗi cửa sổ):</label>
+                        <input type="number" id="cfg-ws" class="form-control" value="3">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="label_threshold_delta">Ngưỡng tiện ích tối thiểu (δ):</label>
+                        <input type="number" id="cfg-delta" class="form-control" step="0.05" value="0.2">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="label_pruning_strategy">Chiến lược cắt tỉa:</label>
+                        <select id="cfg-pruning" class="form-control">
+                            <option value="REVISED_UPPER_BOUND" data-i18n="opt_pruning_rub">Cận trên hiệu chỉnh (Cắt tỉa CT13 - Revised Upper Bound)</option>
+                            <option value="NONE" data-i18n="opt_pruning_none">Không cắt tỉa (Sinh đầy đủ mọi ứng viên - Full Search)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title" data-i18n="card_items_title">Tiện ích Ngoại (EU) & Số lượng Cực đại (M)</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th data-i18n="th_item">Vật phẩm (Item)</th>
+                                <th data-i18n="th_eu">Tiện ích Ngoại (EU)</th>
+                                <th data-i18n="th_m">Số lượng Cực đại (M)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="items-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title" data-i18n="card_txns_title">Các Giao dịch theo Luồng (Bảng 1)</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-i18n="th_tid">Mã GD (TID)</th>
+                            <th data-i18n="th_batch">Lô (Batch)</th>
+                            <th data-i18n="th_period">Chu kỳ (Period)</th>
+                            <th data-i18n="th_items_qty">Các vật phẩm (Số lượng nội bộ IU)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="txns-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 2: RESULTS -->
+        <div id="tab-results" class="tab-content">
+            <div id="results-container">
+                <div class="card" style="text-align: center; color: var(--text-muted); padding: 3rem;" data-i18n="results_empty">
+                    Bấm <strong>⚡ Chạy Thuật Toán</strong> để thực thi thuật toán và hiển thị tập mẫu kết quả.
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: STEP TRACE -->
+        <div id="tab-steps" class="tab-content">
+            <div id="trace-container">
+                <div class="card" style="text-align: center; color: var(--text-muted); padding: 3rem;" data-i18n="trace_empty">
+                    Bấm <strong>⚡ Chạy Thuật Toán</strong> để ghi lại nhật ký trace từng bước thực thi thuật toán.
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: VERIFICATION -->
+        <div id="tab-verify" class="tab-content">
+            <div id="verify-container">
+                <div class="card" style="text-align: center; color: var(--text-muted); padding: 3rem;" data-i18n="verify_empty">
+                    Bấm <strong>🧪 Đối chiếu Chạy tay</strong> để so khớp từng số liệu với kết quả bài báo.
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: THEORY & ARCHITECTURE -->
+        <div id="tab-theory" class="tab-content">
+            <div class="card">
+                <div class="card-title" data-i18n="card_formulas_title">14 Cốt lõi Công thức Toán học (CT1 - CT14)</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 14%;" data-i18n="th_formula_code">Ký hiệu & Tên</th>
+                            <th style="width: 32%;" data-i18n="th_formula_math">Công thức Toán học</th>
+                            <th style="width: 36%;" data-i18n="th_formula_desc">Ý nghĩa & Mục đích trong TFUS</th>
+                            <th style="width: 18%;" data-i18n="th_formula_stage">Giai đoạn Áp dụng</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>CT1</strong><br><small class="badge badge-primary" data-i18n="ct1_name">Tiện ích thực</small></td>
+                            <td><code>U(i<sub>n</sub>, T<sub>m</sub>) = IU(i<sub>n</sub>, T<sub>m</sub>) &times; EU(i<sub>n</sub>)</code></td>
+                            <td data-i18n="ct1_desc">Tiện ích thực tế của item i_n trong giao dịch T_m = số lượng nội bộ (IU) × lợi nhuận đơn vị (EU).</td>
+                            <td data-i18n="ct1_stage">Quét giao dịch (Bước 1 &amp; Bước 3.2)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CT2</strong><br><small class="badge badge-primary" data-i18n="ct2_name">Giá trị mờ</small></td>
+                            <td><code>Fv(i<sub>n</sub>.t, T<sub>m</sub>) = Membership(IU(i<sub>n</sub>, T<sub>m</sub>))</code></td>
+                            <td data-i18n="ct2_desc">Giá trị mờ đại diện mức độ thuộc về nhãn ngôn ngữ t ∈ {L, M, H} qua hàm thành viên tam giác/hình thang.</td>
+                            <td data-i18n="ct2_stage">Mờ hóa dữ liệu (Bước 1 &amp; Phụ lục A)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CT3</strong><br><small class="badge badge-primary" data-i18n="ct3_name">Giá trị mờ nhỏ nhất</small></td>
+                            <td><code>minFv(X, T<sub>m</sub>) = min { Fv(i<sub>n</sub>.t, T<sub>m</sub>) | i<sub>n</sub>.t &isin; X }</code></td>
+                            <td data-i18n="ct3_desc">Giá trị mờ nhỏ nhất của mẫu X trong giao dịch T_m (chuẩn phép giao mờ T-norm minimum).</td>
+                            <td data-i18n="ct3_stage">Khởi tạo entry &amp; Giao danh sách</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CT4</strong><br><small class="badge badge-primary" data-i18n="ct4_name">Tiện ích mờ giao dịch</small></td>
+                            <td><code>FU(X, T<sub>m</sub>) = minFv(X, T<sub>m</sub>) &times; &sum;<sub>i<sub>n</sub>.t &isin; X</sub> U(i<sub>n</sub>, T<sub>m</sub>)</code></td>
+                            <td data-i18n="ct4_desc">Tiện ích mờ của mẫu X trong một giao dịch = độ mờ tối thiểu nhân với tổng tiện ích thực của các item.</td>
+                            <td data-i18n="ct4_stage">Thêm entry vào TFUS-list</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CT5</strong><br><small class="badge badge-primary" data-i18n="ct5_name">Tiện ích mờ cửa sổ</small></td>
+                            <td><code>FU(X, W<sub>k</sub>) = &sum;<sub>T<sub>m</sub> &isin; W<sub>k</sub></sub> FU(X, T<sub>m</sub>)</code></td>
+                            <td data-i18n="ct5_desc">Tổng tiện ích mờ tích lũy của mẫu X trong toàn bộ cửa sổ trượt hiện hành W_k.</td>
+                            <td data-i18n="ct5_stage">TFUSList.fu(), dùng xét mẫu kết quả</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CT6</strong><br><small class="badge badge-primary" data-i18n="ct6_name">Tiện ích mờ giao dịch</small></td>
+                            <td><code>TFU(T<sub>m</sub>) = &sum;<sub>i<sub>n</sub>.t &isin; T<sub>m</sub></sub> Fv(i<sub>n</sub>.t, T<sub>m</sub>) &times; U(i<sub>n</sub>, T<sub>m</sub>)</code></td>
+                            <td data-i18n="ct6_desc">Tổng tiện ích mờ qua mọi nhãn của tất cả item trong T_m; làm cơ sở tính mẫu số chu kỳ.</td>
+                            <td data-i18n="ct6_stage">Lưu vào UBTable khi quét giao dịch</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CT7</strong><br><small class="badge badge-primary" data-i18n="ct7_name">Tiện ích mờ cực đại</small></td>
+                            <td><code>MTFU(T<sub>m</sub>) = &sum;<sub>i<sub>n</sub> &isin; T<sub>m</sub></sub> max<sub>t</sub> { Fv(i<sub>n</sub>.t, T<sub>m</sub>) } &times; U(i<sub>n</sub>, T<sub>m</sub>)</code></td>
+                            <td data-i18n="ct7_desc">Tiện ích mờ giao dịch cực đại: chỉ lấy nhãn có Fv lớn nhất cho mỗi item để tránh cộng trùng tiện ích.</td>
+                            <td data-i18n="ct7_stage">Cộng dồn vào FUUB của từng item</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CT8</strong><br><small class="badge badge-primary" data-i18n="ct8_name">Cận trên tiện ích mờ</small></td>
+                            <td><code>FUUB(i<sub>n</sub>.t, W<sub>k</sub>) = &sum;<sub>T<sub>m</sub> &isin; W<sub>k</sub>, i<sub>n</sub>.t &isin; T<sub>m</sub></sub> MTFU(T<sub>m</sub>)</code></td>
+                            <td data-i18n="ct8_desc">Cận trên tiện ích mờ của item: tổng MTFU của các giao dịch chứa item trong cửa sổ W_k.</td>
+                            <td data-i18n="ct8_stage">Quét giao dịch &amp; Cập nhật lô</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CT9</strong><br><small class="badge badge-primary" data-i18n="ct9_name">Tỷ lệ cận trên mờ</small></td>
+                            <td><code>TFUUBR(i<sub>n</sub>.t, W<sub>k</sub>) = FUUB(i<sub>n</sub>.t, W<sub>k</sub>) / &sum;<sub>T<sub>m</sub> &isin; PS(I)</sub> TFU(T<sub>m</sub>)</code></td>
+                            <td data-i18n="ct9_desc">Tỷ lệ cận trên tiện ích mờ thời gian: loại bỏ sớm các item không tiềm năng nếu TFUUBR < δ.</td>
+                            <td data-i18n="ct9_stage">Tái cấu trúc (Restructure - Bước 2)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CT10</strong><br><small class="badge badge-primary" data-i18n="ct10_name">Tiện ích mờ còn lại</small></td>
+                            <td><code>RFU(X, T<sub>m</sub>) = minFv(X, T<sub>m</sub>) &times; &sum;<sub>i &isin; RS(X, T<sub>m</sub>)</sub> U(i, T<sub>m</sub>)</code></td>
+                            <td data-i18n="ct10_desc">Tổng tiện ích các item đứng sau theo thứ tự xử lý; dùng bảng tạm tránh cộng trùng cùng item.</td>
+                            <td data-i18n="ct10_stage">Duyệt ngược danh sách tái cấu trúc</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CT11</strong><br><small class="badge badge-primary" data-i18n="ct11_name">Trừ tiện ích khi trượt</small></td>
+                            <td><code>FU(i<sub>n</sub>.t) -= minFv(i<sub>n</sub>.t, T<sub>m</sub>) &times; U(i<sub>n</sub>, T<sub>m</sub>)</code></td>
+                            <td data-i18n="ct11_desc">Cập nhật trừ dần tiện ích mờ khi lô cũ nhất B_oldest trượt ra ngoài cửa sổ mà không cần quét lại từ đầu.</td>
+                            <td data-i18n="ct11_stage">Trượt cửa sổ (Bước 3.1 - Xóa lô cũ)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CT12</strong><br><small class="badge badge-primary" data-i18n="ct12_name">Tỷ lệ tiện ích mờ thời gian</small></td>
+                            <td><code>tFUR(X, W<sub>k</sub>) = FU(X, W<sub>k</sub>) / &sum;<sub>T<sub>m</sub> &isin; PS(X, W<sub>k</sub>)</sub> TFU(T<sub>m</sub>)</code></td>
+                            <td data-i18n="ct12_desc">Tiêu chuẩn xác nhận mẫu kết quả nếu tFUR ≥ δ (Mẫu tiện ích mờ thời gian cao).</td>
+                            <td data-i18n="ct12_stage">Đánh giá kết quả (Algorithm 2)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CT13</strong><br><small class="badge badge-primary" data-i18n="ct13_name">Tỷ lệ cận trên hiệu chỉnh</small></td>
+                            <td><code>rTFUUBR(X, W<sub>k</sub>) = [FU(X, W<sub>k</sub>) + RFU(X, W<sub>k</sub>)] / mSTFU(X, W<sub>k</sub>)</code></td>
+                            <td data-i18n="ct13_desc">Điều kiện cắt tỉa nhánh đệ quy (Lemma 2): nếu rTFUUBR < δ thì cắt tỉa toàn bộ nhánh con.</td>
+                            <td data-i18n="ct13_stage">Cắt tỉa nhánh (Pruning Strategy)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>CT14</strong><br><small class="badge badge-primary" data-i18n="ct14_name">Ghép danh sách điều kiện</small></td>
+                            <td><code>(T<sub>m</sub>, U<sub>X</sub>+U<sub>Y</sub>-U<sub>prefix</sub>, min(RU<sub>X</sub>, RU<sub>Y</sub>), min(mFv<sub>X</sub>, mFv<sub>Y</sub>))</code></td>
+                            <td data-i18n="ct14_desc">Cấu trúc entry khi kết hợp hai danh sách X và Y trong cùng giao dịch, trừ phần tiền tố qua bảng PUTable.</td>
+                            <td data-i18n="ct14_stage">Mở rộng mẫu (Pattern Extension)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card">
+                <div class="card-title" data-i18n="card_patterns_title">Các Mẫu Thiết kế (Design Patterns) đã Triển khai</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-i18n="th_dp_name">Mẫu thiết kế</th>
+                            <th data-i18n="th_dp_class">Lớp triển khai trong Java</th>
+                            <th data-i18n="th_dp_role">Vai trò & Trách nhiệm</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong data-i18n="dp_template_name">Template Method</strong></td>
+                            <td><code>AbstractSlidingWindowMiner</code></td>
+                            <td data-i18n="dp_template_role">Đóng khung vòng đời luồng cửa sổ trượt (xóa lô cũ, chèn lô mới, tái cấu trúc, khai thác).</td>
+                        </tr>
+                        <tr>
+                            <td><strong data-i18n="dp_strategy_name">Strategy</strong></td>
+                            <td><code>MembershipFunction</code>, <code>PruningStrategy</code></td>
+                            <td data-i18n="dp_strategy_role">Thay đổi linh hoạt hàm thành viên mờ (Tam giác/Hình thang) và chiến lược cắt tỉa (Pruning).</td>
+                        </tr>
+                        <tr>
+                            <td><strong data-i18n="dp_observer_name">Observer</strong></td>
+                            <td><code>EventPublisher</code>, <code>MiningListener</code></td>
+                            <td data-i18n="dp_observer_role">Phát và bắt các sự kiện trace chi tiết (TransactionScanned, RestructureCompleted, ...).</td>
+                        </tr>
+                        <tr>
+                            <td><strong data-i18n="dp_memento_name">Memento</strong></td>
+                            <td><code>ListsSnapshot</code></td>
+                            <td data-i18n="dp_memento_role">Đóng băng bản chụp trạng thái bất biến của TFUS-list sau tái cấu trúc để phục vụ audit/UI.</td>
+                        </tr>
+                        <tr>
+                            <td><strong data-i18n="dp_command_name">Command</strong></td>
+                            <td><code>ApiCommand</code></td>
+                            <td data-i18n="dp_command_role">Đóng gói các endpoint HTTP API thành các đối tượng Command xử lý độc lập.</td>
+                        </tr>
+                        <tr>
+                            <td><strong data-i18n="dp_facade_name">Facade</strong></td>
+                            <td><code>MiningFacade</code></td>
+                            <td data-i18n="dp_facade_role">Điểm điều phối chung, giao tiếp thống nhất cho cả giao diện CLI, Web và mô-đun Đối chiếu.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <span data-i18n="footer_text">Hệ thống Khai phá Luồng TFUS • Thư viện Tiêu chuẩn Java 17+ (Không Framework, Không Spring, Không Thư viện JSON ngoài)</span>
+    </footer>
+
+    <script src="/js/i18n.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/main.js"></script>
+</body>
+</html>
